@@ -1,9 +1,9 @@
-const user = require("../models/user");
+const User = require("../models/user");
 const catchAsync = require("../utilis/catchAsync");
 
 const getProfile = catchAsync(async (req, res) => {
     const userId = req.user.userId;
-    const user = await user.findById(userId).select('-password -confirmPassword');
+    const user = await User.findById(userId).select('-password -confirmPassword');
 
     if (!user) {
         return res.status(404).json({ statusCode: "01", message: 'User not found' });
@@ -30,7 +30,7 @@ const updateProfile = catchAsync(async (req, res) => {
         updates.profilePicture = imagePath;
     }
 
-    const user = await user.findByIdAndUpdate(userId, updates, {
+    const user = await User.findByIdAndUpdate(userId, updates, {
         new: true,
         runValidators: true
     }).select('-password -confirmPassword');
