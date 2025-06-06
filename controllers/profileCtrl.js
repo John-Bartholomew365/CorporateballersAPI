@@ -1,66 +1,50 @@
-const User = require('../models/user');
-const path = require('path');
-const multer = require('multer');
+const user = require("../models/user");
+const catchAsync = require("../utilis/catchAsync");
 
+const getProfile = catchAsync(async (req, res) => {
+    const userId = req.user.userId;
+    const user = await user.findById(userId).select('-password -confirmPassword');
 
-const getProfile = async (req, res) => {
-    try {
-        const userId = req.user.userId; // Assuming userId is stored in req.user by authentication middleware
-        const user = await User.findById(userId).select('-password -confirmPassword'); // Exclude sensitive fields
-
-        if (!user) {
-            return res.status(404).json({ statusCode: "01", message: 'User not found' });
-        }
-
-        res.status(200).json({ statusCode: "00", message: 'Profile retrieved successfully', user });
-    } catch (err) {
-        res.status(500).json({ statusCode: "01", message: 'Server error', error: err.message });
+    if (!user) {
+        return res.status(404).json({ statusCode: "01", message: 'User not found' });
     }
-}
 
-const updateProfile = async (req, res) => {
-    try {
-        const userId = req.user.userId;
+    res.status(200).json({ statusCode: "00", message: 'Profile retrieved successfully', user });
+});
 
-        const { bio, jerseyNumber, age, height, weight } = req.body;
+const updateProfile = catchAsync(async (req, res) => {
+    const userId = req.user.userId;
 
-        const updates = {
-            ...(bio && { bio }),
-            ...(jerseyNumber && { jerseyNumber }),
-            ...(age && { age }),
-            ...(height && { height }),
-            ...(weight && { weight }),
-        };
+    const { bio, jerseyNumber, age, height, weight } = req.body;
 
-        // If file was uploaded, add the path
-        if (req.file) {
-            const imagePath = `/uploads/profilePictures/${req.file.filename}`;
-            updates.profilePicture = imagePath;
-        }
+    const updates = {
+        ...(bio && { bio }),
+        ...(jerseyNumber && { jerseyNumber }),
+        ...(age && { age }),
+        ...(height && { height }),
+        ...(weight && { weight }),
+    };
 
-        const user = await User.findByIdAndUpdate(userId, updates, {
-            new: true,
-            runValidators: true
-        }).select('-password -confirmPassword');
-
-        if (!user) {
-            return res.status(404).json({ statusCode: "01", message: 'User not found' });
-        }
-
-        res.status(200).json({
-            statusCode: "00",
-            message: 'Profile updated successfully',
-            user
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            statusCode: "01",
-            message: 'Server error',
-            error: err.message
-        });
+    if (req.file) {
+        const imagePath = `/uploads/profilePictures/${req.file.filename}`;
+        updates.profilePicture = imagePath;
     }
-};
+
+    const user = await user.findByIdAndUpdate(userId, updates, {
+        new: true,
+        runValidators: true
+    }).select('-password -confirmPassword');
+
+    if (!user) {
+        return res.status(404).json({ statusCode: "01", message: 'User not found' });
+    }
+
+    res.status(200).json({
+        statusCode: "00",
+        message: 'Profile updated successfully',
+        user
+    });
+});
 
 module.exports = {
     getProfile,

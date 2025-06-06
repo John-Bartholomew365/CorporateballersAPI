@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const catchAsync = require('../utilis/catchAsync');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const FRONTEND_URL = 'https://yourfrontend.com'; // for reset links
@@ -55,12 +56,14 @@ const register = async (req, res) => {
         });
 
         await user.save();
-        res.status(201).json({ statusCode:"00",message: 'Registration successful', user: {
+        res.status(201).json({
+            statusCode: "00", message: 'Registration successful. Your account require approval by an administrator', user: {
             id: user._id,
             name: `${user.firstName} ${user.lastName}`,
             email: user.email,
             playerID:newId,
             role: user.role,
+            isVerified: user.isVerified
         } });
 
     } catch (err) {
@@ -78,6 +81,11 @@ const login = async (req, res) => {
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+
+        // Check if user is verified (approved by admin)
+        if (!user.isVerified) {
+            return res.status(400).json({message:'Your account is awaiting approval by an administrator'});
+        }
 
         const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -170,32 +178,28 @@ const resetPassword = async (req, res) => {
 };
 
 // Change Password (logged-in users)
-const changePassword = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const { oldPassword, newPassword, confirmPassword } = req.body;
+const changePassword = catchAsync(async (req, res) => {
+    const userId = req.user.userId;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
 
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Old password is incorrect' });
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: 'Old password is incorrect' });
 
-        if (newPassword !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match' });
+    if (newPassword !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match' });
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        user.password = hashedPassword;
-        user.confirmPassword = hashedPassword;
+    user.password = hashedPassword;
+    user.confirmPassword = hashedPassword;
 
-        await user.save();
+    await user.save();
 
-        res.status(200).json({ statusCode:"00",message: 'Password changed successfully' });
+    res.status(200).json({ statusCode: "00", message: 'Password changed successfully' });
+});
 
-    } catch (err) {
-        res.status(500).json({statusCode:"01",message: 'Server error', error: err.message });
-    }
-};
 
 // Export all functions
 module.exports = {

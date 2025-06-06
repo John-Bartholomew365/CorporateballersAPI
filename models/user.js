@@ -23,16 +23,16 @@ const userSchema = new mongoose.Schema({
         enum: ['Beginner', 'Amateur', 'Semi-Pro', 'Professional'],
         required: true
     },
-    jerseyNumber: { type: Number, required: true, min: 1, max: 99 },
-    age: { type: Number, required: true },
-    height: { type: String, required: true }, // e.g., "6'0"
-    weight: { type: String, required: true }, // e.g., "180 lbs" 
+    jerseyNumber: { type: Number, required: false, min: 1, max: 99 },
+    age: { type: Number, required: false },
+    height: { type: String, required: false }, // e.g., "6'0"
+    weight: { type: String, required: false }, // e.g., "180 lbs" 
 
     // Emergency Contact
     emergencyContact: {
-        contactName: { type: String, required: true },
-        contactPhone: { type: String, required: true },
-        relationship: { type: String, required: true }
+        contactName: { type: String, required: false },
+        contactPhone: { type: String, required: false },
+        relationship: { type: String, required: false }
     },
 
     // Additional Information
@@ -52,6 +52,20 @@ const userSchema = new mongoose.Schema({
         enum: ['User', 'Admin'],
         default: 'User',
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    status: {
+        type: String,
+        enum: ['Active', 'Inactive', 'Suspended','Rejected'],
+        default: 'Active',
+    },
+    achievements: [{
+        title: { type: String, required: false },
+        description: { type: String, required: false },
+        date: { type: Date, default: Date.now }
+    }],
     // Timestamp
     createdAt: { type: Date, default: Date.now }
 });

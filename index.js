@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const path = require('path');
 // Route imports
 
@@ -20,6 +21,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // Assuming you have admin routes in authRoutes, otherwise import adminRoutes separately
 
 // Base route
 app.get('/', (req, res) => {
@@ -45,7 +47,7 @@ mongoose
 process.on('unhandledRejection', (err) => {
     console.log('UNHANDLED REJECTION! 💥 Shutting down...');
     console.log(err.name, err.message);
-    server.close(() => {
+    app.close(() => {
         process.exit(1);
     });
 });
