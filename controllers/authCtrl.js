@@ -52,10 +52,12 @@ const register = async (req, res) => {
             terms,
             password: hashedPassword,
             confirmPassword: hashedPassword,
-            playerID: newId
+            playerID: newId,
+            verificationStatus: 'Pending',
         });
 
         await user.save();
+
         res.status(201).json({
             statusCode: "00", message: 'Registration successful. Your account require approval by an administrator', user: {
             id: user._id,

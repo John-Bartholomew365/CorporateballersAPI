@@ -56,9 +56,10 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    verificationStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
     status: {
         type: String,
-        enum: ['Active', 'Inactive', 'Suspended','Rejected'],
+        enum: ['Active', 'Inactive', 'Suspended'],
         default: 'Active',
     },
     achievements: [{

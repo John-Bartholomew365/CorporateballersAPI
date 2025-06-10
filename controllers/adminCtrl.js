@@ -16,6 +16,9 @@ const verifyPlayer = catchAsync(async (req, res, next) => {
         return('No user found with that ID', 404);
     }
 
+    user.verificationStatus = 'Approved'; // Or use `isRejected = true`
+    await user.save();
+
     res.status(200).json({
         statusCode: "00",
         message: 'User verified successfully',
@@ -36,7 +39,7 @@ const rejectPlayer = catchAsync(async (req, res, next) => {
     }
 
     // Optionally store rejection reason or status
-    user.status = 'Rejected'; // Or use `isRejected = true`
+    user.verificationStatus = 'Rejected'; // Or use `isRejected = true`
     await user.save();
 
     // Send email after marking as rejected
