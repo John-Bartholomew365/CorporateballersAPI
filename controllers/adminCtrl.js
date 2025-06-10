@@ -19,6 +19,14 @@ const verifyPlayer = catchAsync(async (req, res, next) => {
     user.verificationStatus = 'Approved'; // Or use `isRejected = true`
     await user.save();
 
+
+    // Send Email after marking as verified
+    await sendEmail({
+        email: user.email,
+        subject: 'CBFA Registration Status',
+        message: `Dear ${user.firstName},\n\nCongratulations! Your CBFA registration has been approved.\n\nRegards,\nCBFA Team`
+    });
+
     res.status(200).json({
         statusCode: "00",
         message: 'User verified successfully',
@@ -43,11 +51,11 @@ const rejectPlayer = catchAsync(async (req, res, next) => {
     await user.save();
 
     // Send email after marking as rejected
-    // await sendEmail({
-    //     email: user.email,
-    //     subject: 'CBFA Registration Status',
-    //     message: `Dear ${user.firstName},\n\nWe regret to inform you that your CBFA registration has been rejected.\n\nRegards,\nCBFA Team`
-    // });
+    await sendEmail({
+        email: user.email,
+        subject: 'CBFA Registration Status',
+        message: `Dear ${user.firstName},\n\nWe regret to inform you that your CBFA registration has been rejected.\n\nRegards,\nCBFA Team`
+    });
 
     res.status(200).json({
         statusCode: "00",

@@ -4,9 +4,10 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const catchAsync = require('../utilis/catchAsync');
+const sendEmail = require('../utilis/nodemailer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-const FRONTEND_URL = 'https://yourfrontend.com'; // for reset links
+const FRONTEND_URL = process.env.FRONTEND_URL; // for reset links
 
 // Register
 const register = async (req, res) => {
@@ -129,7 +130,7 @@ const forgotPassword = async (req, res) => {
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-        await transporter.sendMail({
+        await sendEmail({
             to: user.email,
             subject: 'Password Reset Request',
             html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link will expire in 10 minutes.</p>`
@@ -167,7 +168,7 @@ const resetPassword = async (req, res) => {
         await user.save();
 
         // Optional: Notify user after successful reset
-        await transporter.sendMail({
+        await sendEmail({
             to: user.email,
             subject: 'Password Successfully Reset',
             html: `<p>Your password has been successfully updated. If you didn't perform this action, please contact support immediately.</p>`
