@@ -72,7 +72,8 @@ const getAllPlayers = catchAsync(async (req, res, next) => {
     const seniorCount = players.filter(p => p.category === 'Senior').length;
     const juniorCount = players.filter(p => p.category === 'Junior').length;
     const activePlayers = players.filter(p => p.status === 'Active').length;
-
+    
+    // console.log(players)
     res.status(200).json({
         statusCode: "00",
         message: 'Players retrieved successfully',
@@ -93,6 +94,7 @@ const getAllPlayers = catchAsync(async (req, res, next) => {
         }))
     });
 });
+
 
 
 const getDashboardStats = catchAsync(async (req, res, next) => {
