@@ -85,7 +85,10 @@ const login = async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
         // Check if user is verified (approved by admin)
-        if (!user.isVerified) {
+        if (!user.isVerified || user.verificationStatus !== 'Approved') {
+            if (user.verificationStatus === 'Rejected') {
+                return res.status(400).json({ message: 'Your account has been rejected by an administrator' });
+            }
             return res.status(400).json({message:'Your account is awaiting approval by an administrator'});
         }
 
@@ -120,24 +123,15 @@ const forgotPassword = async (req, res) => {
         const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
         user.resetPasswordToken = resetTokenHash;
-        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 mins
+        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
         await user.save();
 
-        const resetUrl = `${FRONTEND_URL}/reset-password/${resetToken}`;
-
-        // Replace with your real SMTP config
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: 'youremail@example.com',
-                pass: 'yourpassword'
-            }
-        });
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
         await transporter.sendMail({
             to: user.email,
-            subject: 'Password Reset',
+            subject: 'Password Reset Request',
             html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link will expire in 10 minutes.</p>`
         });
 
@@ -172,7 +166,14 @@ const resetPassword = async (req, res) => {
 
         await user.save();
 
-        res.status(200).json({ statusCode:"00", message: 'Password has been reset successfully' });
+        // Optional: Notify user after successful reset
+        await transporter.sendMail({
+            to: user.email,
+            subject: 'Password Successfully Reset',
+            html: `<p>Your password has been successfully updated. If you didn't perform this action, please contact support immediately.</p>`
+        });
+
+        res.status(200).json({ statusCode: "00", message: 'Password has been reset successfully' });
 
     } catch (err) {
         res.status(500).json({ statusCode: "01", message: 'Server error', error: err.message });
