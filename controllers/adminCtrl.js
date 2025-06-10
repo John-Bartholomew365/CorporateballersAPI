@@ -90,7 +90,8 @@ const getAllPlayers = catchAsync(async (req, res, next) => {
             status: player.status,
             playerId: player.playerID,
             profilePicture: player.profilePicture, // for initials/avatar display
-            attendance: Math.floor(Math.random() * (96 - 85 + 1) + 85) // mock attendance
+            attendance: Math.floor(Math.random() * (96 - 85 + 1) + 85), // mock attendance
+            verificationStatus: player.verificationStatus // include verification status
         }))
     });
 });
