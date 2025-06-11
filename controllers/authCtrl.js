@@ -66,7 +66,8 @@ const register = async (req, res) => {
             email: user.email,
             playerID:newId,
             role: user.role,
-            isVerified: user.isVerified
+            isVerified: user.isVerified,
+            verificationStatus: user.verificationStatus
         } });
 
     } catch (err) {
@@ -93,7 +94,7 @@ const login = async (req, res) => {
             return res.status(400).json({message:'Your account is awaiting approval by an administrator'});
         }
 
-        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '2d' });
 
         res.status(200).json({
             statusCode:"00",
@@ -130,10 +131,11 @@ const forgotPassword = async (req, res) => {
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
+        console.log("Sending reset email to:", user.email);
         await sendEmail({
             to: user.email,
             subject: 'Password Reset Request',
-            html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link will expire in 10 minutes.</p>`
+            message: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link will expire in 10 minutes.</p>`
         });
 
         res.status(200).json({ statusCode: "00", message: 'Reset link sent to email' });
@@ -171,7 +173,7 @@ const resetPassword = async (req, res) => {
         await sendEmail({
             to: user.email,
             subject: 'Password Successfully Reset',
-            html: `<p>Your password has been successfully updated. If you didn't perform this action, please contact support immediately.</p>`
+            message: `<p>Your password has been successfully updated. If you didn't perform this action, please contact support immediately.</p>`
         });
 
         res.status(200).json({ statusCode: "00", message: 'Password has been reset successfully' });

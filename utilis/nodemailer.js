@@ -11,7 +11,7 @@ const sendEmail = async (options) => {
 
     const mailOptions = {
         from: `"CBFA" <${process.env.EMAIL_USER}>`,
-        to: options.email,
+        to: options.to || options.email,
         subject: options.subject,
         text: options.message
     };

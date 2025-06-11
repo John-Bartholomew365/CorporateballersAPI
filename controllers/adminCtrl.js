@@ -16,7 +16,7 @@ const verifyPlayer = catchAsync(async (req, res, next) => {
         return('No user found with that ID', 404);
     }
 
-    user.verificationStatus = 'Approved'; // Or use `isRejected = true`
+    user.verificationStatus = 'Approved';
     await user.save();
 
 
@@ -66,7 +66,7 @@ const rejectPlayer = catchAsync(async (req, res, next) => {
 
 const getAllPlayers = catchAsync(async (req, res, next) => {
     const players = await User.find({ role: 'User' }).select(
-        'firstName lastName age category preferredPosition status playerID profilePicture'
+        'firstName lastName age category preferredPosition status playerID profilePicture verificationStatus'
     );
 
     if (!players || players.length === 0) {
@@ -108,8 +108,9 @@ const getAllPlayers = catchAsync(async (req, res, next) => {
 
 const getDashboardStats = catchAsync(async (req, res, next) => {
     const totalPlayers = await User.countDocuments({ role: 'User' });
-    const verifiedPlayers = await User.countDocuments({ role: 'User', isVerified: true });
-    const unverifiedPlayers = await User.countDocuments({ role: 'User', isVerified: false });
+    const verifiedPlayers = await User.countDocuments({ role: 'User', isVerified: true , verificationStatus: 'Approved' });
+    const unverifiedPlayers = await User.countDocuments({ role: 'User', isVerified: false, verificationStatus: 'Pending' });
+    const rejectedPlayers = await User.countDocuments({ role: 'User', isVerified: false, verificationStatus: 'Rejected' });
 
     res.status(200).json({
         statusCode: "00",
@@ -118,6 +119,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
             totalPlayers,
             verifiedPlayers,
             unverifiedPlayers,
+            rejectedPlayers,
         },
     });
 });
