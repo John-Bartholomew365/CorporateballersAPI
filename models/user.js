@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema({
     // Security
     password: { type: String, required: true },
     confirmPassword: { type: String, required: true },
+    isOtpVerified: {
+        type: Boolean,
+        default: false
+      },
 
     // User Role
     role: {

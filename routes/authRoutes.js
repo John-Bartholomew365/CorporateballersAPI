@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {authentication} = require('../middlewares/auth');
-const { register, login, forgotPassword, resetPassword, changePassword } = require('../controllers/authCtrl');
+const { register, login, forgotPassword, resetPassword, changePassword, verifyOtp } = require('../controllers/authCtrl');
 const { getProfile, updateProfile } = require('../controllers/profileCtrl');
 const upload = require('../middlewares/upload');
 
@@ -14,8 +14,10 @@ router.post('/login',login);
 // @route   POST /api/auth/forgot-password
 router.post('/forgot-password',forgotPassword);
 
+router.post('/verify-otp', verifyOtp)
+
 // @route   POST /api/auth/reset-password/:token
-router.post('/reset-password/:token',resetPassword);
+router.post('/reset-password',resetPassword);
 
 // @route   PUT /api/auth/change-password
 router.patch('/change-password', authentication,changePassword);
