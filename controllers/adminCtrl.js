@@ -1,3 +1,5 @@
+const Tournament = require("../models/tournament");
+const TrainingSession = require("../models/training");
 const User = require("../models/user");
 const catchAsync = require("../utilis/catchAsync");
 const sendEmail = require("../utilis/nodemailer");
@@ -63,7 +65,6 @@ const rejectPlayer = catchAsync(async (req, res, next) => {
     });
 });
 
-
 const getAllPlayers = catchAsync(async (req, res, next) => {
     const players = await User.find({ role: 'User' }).select(
         'firstName lastName age category preferredPosition status playerID profilePicture verificationStatus'
@@ -104,8 +105,6 @@ const getAllPlayers = catchAsync(async (req, res, next) => {
     });
 });
 
-
-
 const getDashboardStats = catchAsync(async (req, res, next) => {
     const totalPlayers = await User.countDocuments({ role: 'User' });
     const verifiedPlayers = await User.countDocuments({ role: 'User', isVerified: true , verificationStatus: 'Approved' });
@@ -124,10 +123,204 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
     });
 });
 
+const createTrainingSession = catchAsync(async (req, res) => {
+  
+    const {
+        day,
+        time,
+        duration,
+        category,
+        coach,
+        trainingType,
+        location,
+        description
+    } = req.body;
+
+    const newSession = new TrainingSession({
+        day,
+        time,
+        duration,
+        category,
+        coach,
+        trainingType,
+        location,
+        description,
+        createdBy: req.user._id
+    });
+
+    await newSession.save();
+
+    res.status(201).json({
+        statusCode: '00',
+        message: 'Training session created successfully',
+        data: newSession
+    });
+});
+
+const getAllTrainingSessions = catchAsync(async (req, res) => {
+    const sessions = await TrainingSession.find().sort({ createdAt: -1 });  
+    if (!sessions || sessions.length === 0) {
+        return res.status(404).json({
+            statusCode: '01',
+            message: 'No training sessions found'
+        });
+    }
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Training sessions retrieved successfully',
+        data: sessions.map(session => ({
+            id: session._id,
+            day: session.day,
+            time: session.time,
+            duration: session.duration,
+            category: session.category,
+            coach: session.coach,
+            trainingType: session.trainingType,
+            location: session.location,
+            description: session.description,
+            createdBy: session.createdBy,
+            createdAt: session.createdAt
+        }))
+    });
+});
+
+const updateTrainingSession = catchAsync(async (req, res) => {
+    const sessionId = req.params.id;
+
+    const updatedSession = await TrainingSession.findByIdAndUpdate(
+        sessionId,
+        req.body,
+        { new: true, runValidators: true }
+    );
+
+    if (!updatedSession) {
+        return res.status(404).json({ message: 'Training session not found' });
+    }
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Training session updated successfully',
+        data: updatedSession
+    });
+});
+
+const deleteTrainingSession = catchAsync(async (req, res) => {
+    const sessionId = req.params.id;
+
+    const deletedSession = await TrainingSession.findByIdAndDelete(sessionId);
+
+    if (!deletedSession) {
+        return res.status(404).json({ message: 'Training session not found' });
+    }
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Training session deleted successfully'
+    });
+});
+
+const createTournament = catchAsync(async (req, res) => {
+    const {
+        name,
+        location,
+        startDate,
+        endDate,
+        registrationDeadline,
+        category,
+        maxTeams,
+        description
+    } = req.body;
+
+    const tournament = new Tournament({
+        name,
+        location,
+        startDate,
+        endDate,
+        registrationDeadline,
+        category,
+        maxTeams,
+        description,
+        createdBy: req.user._id
+    });
+
+    await tournament.save();
+
+    res.status(201).json({
+        statusCode: '00',
+        message: 'Tournament created successfully',
+        data: tournament
+    });
+});
+
+const updateTournamentStatus = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['Upcoming', 'Ongoing', 'Completed', 'Cancelled'];
+
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: 'Invalid status provided' });
+    }
+
+    const tournament = await Tournament.findById(id);
+    if (!tournament) {
+        return res.status(404).json({ message: 'Tournament not found' });
+    }
+
+    tournament.status = status;
+    tournament.updatedAt = Date.now();
+
+    await tournament.save();
+
+    res.status(200).json({
+        statusCode: '00',
+        message: `Tournament marked as ${status}`,
+        data: tournament
+    });
+});
+
+const getAllTournamentsWithStats = catchAsync(async (req, res) => {
+    const tournaments = await Tournament.find().sort({ createdAt: -1 });
+
+    const total = tournaments.length;
+
+    const statusStats = tournaments.reduce(
+        (acc, t) => {
+            acc[t.status] = (acc[t.status] || 0) + 1;
+            return acc;
+        },
+        {
+            Upcoming: 0,
+            Ongoing: 0,
+            Completed: 0,
+            Cancelled: 0,
+        }
+    );
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Tournaments fetched successfully',
+        data: {
+            total,
+            statusStats,
+            tournaments
+        }
+    });
+});
+
+
+
 module.exports = {
     verifyPlayer,
     rejectPlayer,
     getAllPlayers,
-    getDashboardStats
+    getDashboardStats,
+    createTrainingSession,
+    updateTrainingSession,
+    deleteTrainingSession,
+    createTournament,
+    updateTournamentStatus,
+    getAllTournamentsWithStats,
+    getAllTrainingSessions
 };
 

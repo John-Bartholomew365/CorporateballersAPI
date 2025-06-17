@@ -14,7 +14,13 @@ const authentication = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        // Fix: map decoded.id to _id so Mongoose can use it
+        req.user = {
+            _id: decoded.userId, // Ensure this matches your token payload
+            role: decoded.role
+        };
+
+        // console.log("REQ.USER:", req.user);
         next();
     } catch (err) {
         return res.status(403).json({ message: 'Invalid or expired token' });
