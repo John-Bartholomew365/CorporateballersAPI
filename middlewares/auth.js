@@ -16,7 +16,7 @@ const authentication = (req, res, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         // Fix: map decoded.id to _id so Mongoose can use it
         req.user = {
-            _id: decoded.userId, // Ensure this matches your token payload
+            userId: decoded.userId, // Ensure this matches your token payload
             role: decoded.role
         };
 

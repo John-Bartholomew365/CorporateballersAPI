@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const playerRoutes = require('./routes/playerRoutes')
 const path = require('path');
 // Route imports
 
@@ -16,12 +17,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/profilePictures', express.static('uploads/profilePictures'));
+
 
 
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes); // Assuming you have admin routes in authRoutes, otherwise import adminRoutes separately
+app.use('/api/players', playerRoutes)
 
 // Base route
 app.get('/', (req, res) => {

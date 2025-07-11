@@ -1,15 +1,21 @@
+const playerPerformance = require("../models/playerPerformance");
 const User = require("../models/user");
 const catchAsync = require("../utilis/catchAsync");
 
 const getProfile = catchAsync(async (req, res) => {
     const userId = req.user.userId;
     const user = await User.findById(userId).select('-password -confirmPassword');
-
+    const performance = await playerPerformance.findOne({ user: userId });
+    console.log(req.user);
     if (!user) {
         return res.status(404).json({ statusCode: "01", message: 'User not found' });
     }
 
-    res.status(200).json({ statusCode: "00", message: 'Profile retrieved successfully', user });
+    res.status(200).json({ statusCode: "00", 
+                                message: 'Profile retrieved successfully',
+                             user, 
+                             performance
+                            });
 });
 
 const updateProfile = catchAsync(async (req, res) => {
@@ -26,7 +32,7 @@ const updateProfile = catchAsync(async (req, res) => {
     };
 
     if (req.file) {
-        const imagePath = `/uploads/profilePictures/${req.file.filename}`;
+        const imagePath = `https://corporateballersapi.onrender.com/uploads/profilePictures/${req.file.filename}`;
         updates.profilePicture = imagePath;
     }
 

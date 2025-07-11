@@ -1,3 +1,6 @@
+const attendance = require("../models/attendance");
+const playerPerformance = require("../models/playerPerformance");
+const settings = require("../models/settings");
 const Tournament = require("../models/tournament");
 const TrainingSession = require("../models/training");
 const User = require("../models/user");
@@ -145,7 +148,7 @@ const createTrainingSession = catchAsync(async (req, res) => {
         trainingType,
         location,
         description,
-        createdBy: req.user._id
+        createdBy: req.user.userId
     });
 
     await newSession.save();
@@ -308,6 +311,221 @@ const getAllTournamentsWithStats = catchAsync(async (req, res) => {
     });
 });
 
+const updatePlayerPerformance = catchAsync(async (req, res) => {
+    const { userId, playerName, skills, statistics } = req.body;
+
+    const updated = await playerPerformance.findOneAndUpdate(
+        { user:userId },
+        { playerName, skills, statistics },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Player performance updated successfully',
+        data: updated
+    });
+});
+
+const addAchievement = catchAsync(async (req, res) => {
+    const { userId, title, description, accolade, date } = req.body;
+
+    const performance = await playerPerformance.findOneAndUpdate(
+        { user:userId },
+        {
+            $push: {
+                achievements: {
+                    title,
+                    description,
+                    accolade,
+                    date
+                }
+            }
+        },
+        { new: true }
+    );
+
+
+    if (!performance) {
+        return res.status(404).json({
+            statusCode: '01',
+            message: 'Player performance record not found'
+        });
+    }
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Achievement added successfully',
+        data: performance
+    });
+});
+
+const getPlayerPerformance = catchAsync(async (req, res) => {
+    const { userId } = req.params;
+
+    const performance = await playerPerformance.findOne({ user: userId });
+
+    if (!performance) {
+        return res.status(404).json({
+            statusCode: '01',
+            message: 'Performance data not found for player'
+        });
+    }
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Player performance data retrieved',
+        data: performance
+    });
+});
+
+const deleteAchievement = catchAsync(async (req, res) => {
+    const { achievementId } = req.params;
+
+    // Find the document that contains this achievement
+    const performance = await playerPerformance.findOneAndUpdate(
+        { 'achievements._id': achievementId },
+        { $pull: { achievements: { _id: achievementId } } },
+        { new: true }
+    );
+
+    if (!performance) {
+        return res.status(404).json({
+            statusCode: '01',
+            message: 'Achievement not found'
+        });
+    }
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Achievement removed successfully',
+        data: performance
+    });
+});
+
+const markAttendance = catchAsync(async (req, res) => {
+    const { userId, date, session, present } = req.body;
+
+    const record = await attendance.findOneAndUpdate(
+        { user: userId, date, session },
+        { present },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Attendance marked successfully',
+        data: record
+    });
+});
+
+const markAllPresent = catchAsync(async (req, res) => {
+    const { date, session, userIds } = req.body;
+
+    const bulkOps = userIds.map(userId => ({
+        updateOne: {
+            filter: { user: userId, date, session },
+            update: { present: true },
+            upsert: true
+        }
+    }));
+
+    await attendance.bulkWrite(bulkOps);
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'All players marked present'
+    });
+});
+
+const getDailyAttendance = catchAsync(async (req, res) => {
+    const { date, session } = req.query;
+
+    const records = await attendance.find({ date, session }).populate('user', 'firstName lastName category playerId');
+
+    res.status(200).json({
+        statusCode: '00',
+        data: records
+    });
+});
+
+const getWeeklyOverview = catchAsync(async (req, res) => {
+    const { weekStart, weekEnd } = req.query;
+
+    const overview = await attendance.aggregate([
+        {
+            $match: {
+                date: {
+                    $gte: new Date(weekStart),
+                    $lte: new Date(weekEnd)
+                }
+            }
+        },
+        {
+            $group: {
+                _id: { date: '$date', session: '$session' },
+                total: { $sum: 1 },
+                present: { $sum: { $cond: ['$present', 1, 0] } },
+                absent: { $sum: { $cond: [{ $eq: ['$present', false] }, 1, 0] } }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                date: '$_id.date',
+                session: '$_id.session',
+                total: '$total',
+                present: '$present',
+                absent:'$absent',
+                attendanceRate: {
+                    $cond: [
+                        { $gt: ['$total', 0] },
+                        { $round: [{ $multiply: [{ $divide: ['$present', '$total'] }, 100] }, 2] },
+                        0
+                    ]
+                }
+            }
+        },
+        { $sort: { date: 1 } }
+    ]);
+
+    res.status(200).json({
+        statusCode: '00',
+        data: overview
+    });
+});
+
+const updateSettings = catchAsync(async (req, res) => {
+    const updates = req.body;
+
+    const updateSet = await settings.findOneAndUpdate({}, updates, {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Settings updated successfully',
+        data: updateSet
+    });
+});
+
+const getSettings = catchAsync(async (req, res) => {
+    const getSetting = await settings.findOne();
+
+    res.status(200).json({
+        statusCode: '00',
+        message: 'Academy settings retrieved successfully',
+        data: getSetting
+    });
+});
+
+
+
+
+
+
 
 
 module.exports = {
@@ -321,6 +539,16 @@ module.exports = {
     createTournament,
     updateTournamentStatus,
     getAllTournamentsWithStats,
-    getAllTrainingSessions
+    getAllTrainingSessions,
+    updatePlayerPerformance,
+    addAchievement,
+    getPlayerPerformance,
+    deleteAchievement,
+    markAttendance,
+    markAllPresent,
+    getDailyAttendance,
+    getWeeklyOverview,
+    updateSettings,
+    getSettings
 };
 
